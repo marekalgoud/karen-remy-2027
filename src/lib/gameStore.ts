@@ -62,14 +62,15 @@ export async function getSessionUid(): Promise<string> {
 }
 
 export async function waitForAuth(): Promise<string> {
-  if (!auth) return getSessionUid()
+  const currentAuth = auth
+  if (!currentAuth) return getSessionUid()
   return new Promise((resolve, reject) => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(currentAuth, async (user) => {
       unsubscribe()
       if (user) resolve(user.uid)
       else {
         try {
-          resolve((await signInAnonymously(auth)).user.uid)
+          resolve((await signInAnonymously(currentAuth)).user.uid)
         } catch (error) {
           reject(error)
         }
@@ -79,8 +80,9 @@ export async function waitForAuth(): Promise<string> {
 }
 
 export async function loadPlayer(uid: string): Promise<Player | undefined> {
-  if (db) {
-    const snapshot = await getDoc(doc(db, 'players', uid))
+  const firestore = db
+  if (firestore) {
+    const snapshot = await getDoc(doc(firestore, 'players', uid))
     return snapshot.exists() ? (snapshot.data() as Player) : undefined
   }
   const state = readLocal()
@@ -88,8 +90,9 @@ export async function loadPlayer(uid: string): Promise<Player | undefined> {
 }
 
 export async function savePlayer(player: Player): Promise<void> {
-  if (db) {
-    await setDoc(doc(db, 'players', player.uid), player, { merge: true })
+  const firestore = db
+  if (firestore) {
+    await setDoc(doc(firestore, 'players', player.uid), player, { merge: true })
     return
   }
   const state = readLocal()
@@ -99,8 +102,9 @@ export async function savePlayer(player: Player): Promise<void> {
 }
 
 export async function getSolved(uid: string): Promise<string[]> {
-  if (db) {
-    const snapshot = await getDocs(collection(db, 'players', uid, 'solved'))
+  const firestore = db
+  if (firestore) {
+    const snapshot = await getDocs(collection(firestore, 'players', uid, 'solved'))
     return snapshot.docs
       .filter((entry) => entry.data().solved === true || typeof entry.data().rank === 'number')
       .map((entry) => entry.id)
@@ -109,8 +113,9 @@ export async function getSolved(uid: string): Promise<string[]> {
 }
 
 export async function getAttempts(uid: string): Promise<Record<string, number>> {
-  if (db) {
-    const snapshot = await getDocs(collection(db, 'players', uid, 'solved'))
+  const firestore = db
+  if (firestore) {
+    const snapshot = await getDocs(collection(firestore, 'players', uid, 'solved'))
     return Object.fromEntries(snapshot.docs.map((entry) => [entry.id, entry.data().attempts ?? 0]))
   }
   return readLocal().attempts
@@ -121,11 +126,12 @@ export async function submitAnswer(player: Player, puzzle: Puzzle, answer: strin
   const isCorrect = normalize(answer) === normalize(puzzle.answer)
   const maxAttempts = puzzle.maxAttempts ?? 3
 
-  if (db) {
-    return runTransaction(db, async (transaction) => {
-      const playerRef = doc(db, 'players', player.uid)
-      const solveRef = doc(db, 'players', player.uid, 'solved', puzzle.id)
-      const counterRef = doc(db, 'puzzleCounters', puzzle.id)
+  const firestore = db
+  if (firestore) {
+    return runTransaction(firestore, async (transaction) => {
+      const playerRef = doc(firestore, 'players', player.uid)
+      const solveRef = doc(firestore, 'players', player.uid, 'solved', puzzle.id)
+      const counterRef = doc(firestore, 'puzzleCounters', puzzle.id)
       const solveSnapshot = await transaction.get(solveRef)
       const solveData = solveSnapshot.data()
       if (solveData?.solved === true || typeof solveData?.rank === 'number') return { result: 'already' as const }
@@ -177,17 +183,19 @@ export async function submitAnswer(player: Player, puzzle: Puzzle, answer: strin
 }
 
 export function subscribePlayers(onUpdate: (players: Player[]) => void): Unsubscribe {
-  if (db) return onSnapshot(collection(db, 'players'), (snapshot) => onUpdate(snapshot.docs.map((entry) => entry.data() as Player)))
+  const firestore = db
+  if (firestore) return onSnapshot(collection(firestore, 'players'), (snapshot) => onUpdate(snapshot.docs.map((entry) => entry.data() as Player)))
   onUpdate(readLocal().players)
   return () => undefined
 }
 
 export async function deletePlayer(playerId: string): Promise<void> {
-  if (db) {
-    const solvedSnapshot = await getDocs(collection(db, 'players', playerId, 'solved'))
-    const batch = writeBatch(db)
+  const firestore = db
+  if (firestore) {
+    const solvedSnapshot = await getDocs(collection(firestore, 'players', playerId, 'solved'))
+    const batch = writeBatch(firestore)
     solvedSnapshot.docs.forEach((entry) => batch.delete(entry.ref))
-    batch.delete(doc(db, 'players', playerId))
+    batch.delete(doc(firestore, 'players', playerId))
     await batch.commit()
     return
   }
@@ -203,10 +211,11 @@ export async function deletePlayer(playerId: string): Promise<void> {
 }
 
 export async function resetPlayerAttempts(playerId: string): Promise<number> {
-  if (db) {
-    const progressSnapshot = await getDocs(collection(db, 'players', playerId, 'solved'))
+  const firestore = db
+  if (firestore) {
+    const progressSnapshot = await getDocs(collection(firestore, 'players', playerId, 'solved'))
     for (let index = 0; index < progressSnapshot.docs.length; index += 450) {
-      const batch = writeBatch(db)
+      const batch = writeBatch(firestore)
       progressSnapshot.docs.slice(index, index + 450).forEach((progressDoc) => batch.update(progressDoc.ref, { attempts: 0 }))
       await batch.commit()
     }
@@ -222,15 +231,16 @@ export async function resetPlayerAttempts(playerId: string): Promise<number> {
 }
 
 export async function resetAllAttempts(): Promise<number> {
-  if (db) {
-    const playersSnapshot = await getDocs(collection(db, 'players'))
+  const firestore = db
+  if (firestore) {
+    const playersSnapshot = await getDocs(collection(firestore, 'players'))
     const progressSnapshots = await Promise.all(playersSnapshot.docs.map((playerDoc) =>
-      getDocs(collection(db, 'players', playerDoc.id, 'solved')),
+      getDocs(collection(firestore, 'players', playerDoc.id, 'solved')),
     ))
     const progressDocs = progressSnapshots.flatMap((snapshot) => snapshot.docs)
 
     for (let index = 0; index < progressDocs.length; index += 450) {
-      const batch = writeBatch(db)
+      const batch = writeBatch(firestore)
       progressDocs.slice(index, index + 450).forEach((progressDoc) => batch.update(progressDoc.ref, { attempts: 0 }))
       await batch.commit()
     }

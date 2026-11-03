@@ -260,4 +260,39 @@ export async function resetAllAttempts(): Promise<number> {
   return resetCount
 }
 
+export async function resetEntireGame(): Promise<number> {
+  const firestore = db
+  if (firestore) {
+    const [playersSnapshot, countersSnapshot] = await Promise.all([
+      getDocs(collection(firestore, 'players')),
+      getDocs(collection(firestore, 'puzzleCounters')),
+    ])
+    const progressSnapshots = await Promise.all(playersSnapshot.docs.map((playerDoc) =>
+      getDocs(collection(firestore, 'players', playerDoc.id, 'solved')),
+    ))
+    const refs = [
+      ...progressSnapshots.flatMap((snapshot) => snapshot.docs.map((entry) => entry.ref)),
+      ...playersSnapshot.docs.map((entry) => entry.ref),
+      ...countersSnapshot.docs.map((entry) => entry.ref),
+    ]
+
+    for (let index = 0; index < refs.length; index += 450) {
+      const batch = writeBatch(firestore)
+      refs.slice(index, index + 450).forEach((reference) => batch.delete(reference))
+      await batch.commit()
+    }
+    return playersSnapshot.size
+  }
+
+  const state = readLocal()
+  const deletedPlayers = state.players.length
+  state.player = undefined
+  state.players = []
+  state.solved = []
+  state.ranks = {}
+  state.attempts = {}
+  writeLocal(state)
+  return deletedPlayers
+}
+
 export const isCloudMode = firebaseEnabled

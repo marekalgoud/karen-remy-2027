@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Check, Copy, KeyRound, RotateCcw, Trash2, Users } from 'lucide-react'
-import { deletePlayer, isCloudMode, resetAllAttempts, resetPlayerAttempts, subscribePlayers, type Player } from '../lib/gameStore'
+import { deletePlayer, isCloudMode, resetAllAttempts, resetEntireGame, resetPlayerAttempts, subscribePlayers, type Player } from '../lib/gameStore'
 import { treasureClues } from '../data/treasureClues'
 
 const ADMIN_PASSWORD = 'mariage-admin-2027'
@@ -77,6 +77,23 @@ export default function AdminPage() {
     }
   }
 
+  async function handleResetEntireGame() {
+    const confirmed = window.prompt('Cette action supprimera les profils de jeu, scores, réponses et compteurs de rang. Les identifiants Firebase anonymes resteront. Tape REPARTIR pour confirmer.')
+    if (confirmed !== 'REPARTIR') return
+    setBusy(true)
+    setFeedback('')
+    try {
+      const deletedPlayers = await resetEntireGame()
+      if (!isCloudMode) setPlayers([])
+      setFeedback(`Jeu réinitialisé : ${deletedPlayers} joueur(s) supprimé(s). Chaque énigme repartira à 100 points pour son premier gagnant.`)
+    } catch (error) {
+      console.error('Erreur lors de la réinitialisation complète du jeu :', error)
+      setFeedback('La réinitialisation complète a échoué. Vérifie les règles Firestore et réessaie.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function copyTreasureUrl(path: string) {
     const url = `${normalizedUrlBase}${path}`
     try {
@@ -111,6 +128,10 @@ export default function AdminPage() {
     <div className="admin-toolbar">
       <p>Les réponses validées et les scores ne seront pas modifiés par le reset des tentatives.</p>
       <button className="admin-reset-button" type="button" onClick={handleResetAttempts} disabled={busy}><RotateCcw size={15} /> Remettre toutes les tentatives à zéro</button>
+    </div>
+    <div className="admin-full-reset">
+      <div><strong>Repartir d’une base propre</strong><p>Supprime tous les joueurs, leurs scores et leur progression. Les compteurs de rang seront aussi remis à zéro.</p></div>
+      <button className="admin-full-reset-button" type="button" onClick={handleResetEntireGame} disabled={busy}><Trash2 size={15} /> Réinitialiser toute la partie</button>
     </div>
     <section className="admin-treasure-section">
       <div className="admin-treasure-heading">

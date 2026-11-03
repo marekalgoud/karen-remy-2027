@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { ArrowDownRight, ArrowLeft, ArrowRight, Check, ChevronRight, Crown, Heart, Medal, Sparkles, Trophy, Users } from 'lucide-react'
+import { ArrowDownRight, ArrowLeft, ArrowRight, Check, ChevronRight, Cross, Crown, Diamond, Heart, Medal, Sparkles, Trophy, Users } from 'lucide-react'
 import { puzzles, type Puzzle } from './data/puzzles'
 import { getAttempts, getSessionUid, getSolved, isCloudMode, loadPlayer, savePlayer, subscribePlayers, submitAnswer, type Player, type Team } from './lib/gameStore'
 import TeamScene from './features/TeamScene'
@@ -163,7 +163,7 @@ function GameHome({ player, solved }: { player: Player; solved: string[] }) {
 function PuzzleCard({ puzzle, index, solved }: { puzzle: Puzzle; index: number; solved: boolean }) {
   return <Link to={`/enigme/${puzzle.id}`} className={`puzzle-card ${solved ? 'is-solved' : ''}`}>
     <div className="puzzle-card-top"><span className="puzzle-number">{String(index + 1).padStart(2, '0')}</span><span className={`puzzle-status ${solved ? 'done' : ''}`}>{solved ? <><Check size={12} /> RÉSOLUE</> : 'À DÉCOUVRIR'}</span></div>
-    <div className="puzzle-card-art"><span className={`art-orbit orbit-${index % 3}`}><span className="art-core">{index === 0 ? <Heart size={29} /> : index === 1 ? <Sparkles size={29} /> : <span className="art-glyph">{['✳', '✦', '◇', '✧', '♡'][index]}</span>}</span></span><span className="art-caption">{puzzle.category}</span></div>
+    <div className="puzzle-card-art"><span className={`art-orbit orbit-${index % 3}`}><span className="art-core">{index === 0 ? <Heart size={29} /> : index === 1 ? <Sparkles size={29} /> : index === 5 ? <Cross size={27} strokeWidth={1.7} /> : index === 6 ? <Diamond size={27} strokeWidth={1.7} /> : <span className="art-glyph">{['✳', '✦', '◇', '✧', '♡'][index]}</span>}</span></span><span className="art-caption">{puzzle.category}</span></div>
     <div className="puzzle-card-bottom"><div><span className="card-kicker">{puzzle.category}</span><h3>{puzzle.title}</h3></div><span className="circle-arrow"><ArrowRight size={17} /></span></div>
   </Link>
 }

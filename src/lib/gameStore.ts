@@ -182,9 +182,15 @@ export async function submitAnswer(player: Player, puzzle: Puzzle, answer: strin
   return { result: 'correct' as const, points, attempts: nextAttempts }
 }
 
-export function subscribePlayers(onUpdate: (players: Player[]) => void): Unsubscribe {
+export function subscribePlayers(onUpdate: (players: Player[]) => void, onError?: (error: Error) => void): Unsubscribe {
   const firestore = db
-  if (firestore) return onSnapshot(collection(firestore, 'players'), (snapshot) => onUpdate(snapshot.docs.map((entry) => entry.data() as Player)))
+  if (firestore) {
+    return onSnapshot(
+      collection(firestore, 'players'),
+      (snapshot) => onUpdate(snapshot.docs.map((entry) => entry.data() as Player)),
+      onError,
+    )
+  }
   onUpdate(readLocal().players)
   return () => undefined
 }

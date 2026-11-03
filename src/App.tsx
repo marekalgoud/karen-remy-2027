@@ -22,7 +22,12 @@ function App() {
   useEffect(() => {
     if (isTreasurePage) return
     let active = true
+    let unsubscribePlayers: (() => void) | undefined
     getSessionUid().then(async (uid) => {
+      if (!active) return
+      unsubscribePlayers = subscribePlayers(setPlayers, (error) => {
+        console.error('Impossible de synchroniser les joueurs avec Firestore :', error)
+      })
       const [savedPlayer, solvedIds, savedAttempts] = await Promise.all([loadPlayer(uid), getSolved(uid), getAttempts(uid)])
       if (active) {
         setPlayer(savedPlayer)
@@ -31,10 +36,9 @@ function App() {
         setLoading(false)
       }
     }).catch(() => setLoading(false))
-    const unsubscribe = subscribePlayers(setPlayers)
     return () => {
       active = false
-      unsubscribe()
+      unsubscribePlayers?.()
     }
   }, [isTreasurePage])
 

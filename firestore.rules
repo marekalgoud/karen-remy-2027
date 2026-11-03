@@ -1,0 +1,16 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /players/{playerId} {
+      allow read, write: if request.auth != null;
+
+      match /solved/{puzzleId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+
+    match /puzzleCounters/{puzzleId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

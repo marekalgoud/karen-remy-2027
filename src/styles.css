@@ -16,6 +16,8 @@
   --serif: 'Fraunces', Georgia, serif;
 }
 
+#nl-badge-frame { display: none; }
+
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; min-height: 100vh; background-color: var(--paper); background-image: repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(43, 55, 48, .018) 32px); }
 button, input { font: inherit; }

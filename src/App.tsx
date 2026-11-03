@@ -172,6 +172,12 @@ function PuzzlePage({ solved, attemptCounts, onSolve }: { solved: string[]; atte
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
 
+  useEffect(() => {
+    setAnswer('')
+    setFeedback(undefined)
+    setBusy(false)
+  }, [id])
+
   if (!puzzle) return <Navigate to="/" replace />
   const activePuzzle = puzzle
   const wasSolved = solved.includes(activePuzzle.id)

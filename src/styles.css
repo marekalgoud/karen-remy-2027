@@ -263,6 +263,8 @@ h1 em { color: var(--coral); font-weight: 500; }
 .runner-scene { height: clamp(220px, 46vh, 360px); position: relative; overflow: hidden; border: 1px solid #a8cfe4; background: linear-gradient(180deg, #8ed0f4 0%, #c5e9fb 66%, #e4f4fb 100%); box-shadow: inset 0 -12px 30px rgba(57, 118, 148, .1); }
 .runner-scene canvas { width: 100%; height: 100%; touch-action: none; }
 .runner-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 11px; background: rgba(246, 243, 235, .72); color: var(--ink); text-align: center; }
+.runner-overlay-result { animation: runner-result-appear .38s ease-out both; }
+@keyframes runner-result-appear { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .runner-overlay > strong { font: 500 25px var(--serif); }
 .runner-overlay > span:not(.scene-loading-spinner) { color: var(--muted); font-size: 11px; }
 .runner-start-button { min-width: 160px; min-height: 44px; margin-top: 5px; }

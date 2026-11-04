@@ -261,7 +261,7 @@ function PuzzlePage({ solved, attemptCounts, onSolve }: { solved: string[]; atte
         <div className="side-card score-card"><span className="card-kicker">VOTRE ÉQUIPE</span><h3>{solved.length} <small>/ {puzzles.length}</small></h3><span className="score-caption">énigmes résolues</span><Link to="/classement" className="text-link">Classement <ChevronRight size={14} /></Link></div>
       </aside>
     </div>
-    <div className="puzzle-pagination"><span>{puzzles.findIndex((entry) => entry.id === puzzle.id) + 1} / {puzzles.length}</span><div>{puzzles.map((entry) => <span key={entry.id} className={entry.id === puzzle.id ? 'current' : solved.includes(entry.id) ? 'complete' : ''} />)}</div><button className="next-button" onClick={() => { const next = puzzles[puzzles.findIndex((entry) => entry.id === puzzle.id) + 1]; navigate(next ? `/enigme/${next.id}` : '/'); window.scrollTo({ top: 0, behavior: 'smooth' }) }} aria-label="Énigme suivante"><ArrowRight size={17} /></button></div>
+    <div className="puzzle-pagination"><span>{puzzles.findIndex((entry) => entry.id === puzzle.id) + 1} / {puzzles.length}</span><div>{puzzles.map((entry) => <span key={entry.id} className={entry.id === puzzle.id ? 'current' : solved.includes(entry.id) ? 'complete' : ''} />)}</div><button className="next-button" onClick={() => { const next = puzzles[puzzles.findIndex((entry) => entry.id === puzzle.id) + 1]; navigate(next ? `/enigme/${next.id}` : '/runner'); window.scrollTo({ top: 0, behavior: 'smooth' }) }} aria-label="Énigme suivante"><ArrowRight size={17} /></button></div>
   </div>
 }
 

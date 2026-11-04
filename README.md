@@ -19,6 +19,8 @@ Une énigme peut aussi utiliser `images` pour afficher plusieurs visuels compara
 
 La limite est de trois tentatives par défaut. Pour la modifier sur une énigme, ajouter `maxAttempts: 1` (ou un autre nombre) à son entrée; les tentatives sont conservées dans Firestore ou dans le stockage local du navigateur.
 
+La tuile 08 ouvre le runner 3D. Les FBX attendus sont `public/models/game/Fast Run.fbx` (personnage/course), `Jump.fbx` et `Sprinting Forward Roll.fbx`. Les commandes sont flèche haut/espace pour sauter et flèche bas pour rouler; les boutons tactiles sont affichés sous la scène. Les parties sont illimitées : seul le nouveau record personnel ajoute la différence au score total, une seule fois.
+
 L'énigme 5 est une chasse aux cinq lettres du mot `BAGUE`. Les chemins QR sont définis dans `src/data/treasureClues.ts`; chaque page affiche uniquement sa lettre et le lien de retour au jeu. Dans l'administration (`/admin-2027`), saisir le domaine de production puis copier chaque URL pour générer les QR codes. Les URL sont accessibles sans inscription et les liens profonds sont réécrits vers l'application par la configuration Netlify.
 
 ## Administration

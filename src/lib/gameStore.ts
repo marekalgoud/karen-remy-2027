@@ -20,6 +20,7 @@ export type Player = {
   name: string
   team: Team
   score: number
+  runnerBest?: number
 }
 
 type LocalState = {
@@ -180,6 +181,43 @@ export async function submitAnswer(player: Player, puzzle: Puzzle, answer: strin
   state.players = [...state.players.filter((entry) => entry.uid !== player.uid), updatedPlayer]
   writeLocal(state)
   return { result: 'correct' as const, points, attempts: nextAttempts }
+}
+
+export async function recordRunnerBest(player: Player, runScore: number): Promise<Player> {
+  const firestore = db
+  if (firestore) {
+    return runTransaction(firestore, async (transaction) => {
+      const playerRef = doc(firestore, 'players', player.uid)
+      const playerSnapshot = await transaction.get(playerRef)
+      const current = playerSnapshot.exists() ? (playerSnapshot.data() as Player) : player
+      const previousBest = current.runnerBest ?? 0
+      if (runScore <= previousBest) return current
+
+      const improvement = runScore - previousBest
+      const updatedPlayer = {
+        ...current,
+        runnerBest: runScore,
+        score: (current.score ?? 0) + improvement,
+      }
+      transaction.set(playerRef, updatedPlayer, { merge: true })
+      return updatedPlayer
+    })
+  }
+
+  const state = readLocal()
+  const current = state.players.find((entry) => entry.uid === player.uid) ?? state.player ?? player
+  const previousBest = current.runnerBest ?? 0
+  if (runScore <= previousBest) return current
+
+  const updatedPlayer = {
+    ...current,
+    runnerBest: runScore,
+    score: current.score + runScore - previousBest,
+  }
+  state.player = updatedPlayer
+  state.players = [...state.players.filter((entry) => entry.uid !== player.uid), updatedPlayer]
+  writeLocal(state)
+  return updatedPlayer
 }
 
 export function subscribePlayers(onUpdate: (players: Player[]) => void, onError?: (error: Error) => void): Unsubscribe {

@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { ArrowDownRight, ArrowLeft, ArrowRight, Check, ChevronRight, Cross, Crown, Diamond, Heart, Medal, Sparkles, Trophy, Users } from 'lucide-react'
+import { ArrowDownRight, ArrowLeft, ArrowRight, Check, ChevronRight, Cross, Crown, Diamond, Gamepad2, Heart, Medal, Sparkles, Trophy, Users } from 'lucide-react'
 import { puzzles, type Puzzle } from './data/puzzles'
-import { getAttempts, getSessionUid, getSolved, isCloudMode, loadPlayer, savePlayer, subscribePlayers, submitAnswer, type Player, type Team } from './lib/gameStore'
+import { getAttempts, getSessionUid, getSolved, isCloudMode, loadPlayer, recordRunnerBest, savePlayer, subscribePlayers, submitAnswer, type Player, type Team } from './lib/gameStore'
 import TeamScene from './features/TeamScene'
 import AdminPage from './features/AdminPage'
 import FormattedText from './components/FormattedText'
 import TreasureLetterPage from './features/TreasureLetterPage'
+import RunnerGame from './features/RunnerGame'
 import { treasureClues } from './data/treasureClues'
 
 function App() {
@@ -65,6 +66,16 @@ function App() {
     return result
   }
 
+  async function saveRunnerRecord(runScore: number): Promise<number> {
+    if (!player) return 0
+    const updatedPlayer = await recordRunnerBest(player, runScore)
+    setPlayer(updatedPlayer)
+    if (!isCloudMode) {
+      setPlayers((current) => [...current.filter((entry) => entry.uid !== updatedPlayer.uid), updatedPlayer])
+    }
+    return updatedPlayer.runnerBest ?? 0
+  }
+
   if (isTreasurePage) return <TreasureLetterPage clue={treasureClue} />
   if (loading) return <div className="loading-screen"><span className="loading-mark"><Heart size={20} /></span><span>On prépare le jeu…</span></div>
 
@@ -85,6 +96,7 @@ function App() {
         <Routes>
           <Route path="/" element={player ? <GameHome player={player} solved={solved} /> : <Registration onRegister={register} />} />
           <Route path="/enigme/:id" element={player ? <PuzzlePage solved={solved} attemptCounts={attemptCounts} onSolve={solve} /> : <Navigate to="/" replace />} />
+          <Route path="/runner" element={player ? <RunnerGame initialTeam={player.team} bestScore={player.runnerBest ?? 0} onBestScore={saveRunnerRecord} /> : <Navigate to="/" replace />} />
           <Route path="/classement" element={player ? <Leaderboard players={players} player={player} /> : <Navigate to="/" replace />} />
           <Route path="/admin-2027" element={<AdminPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -155,9 +167,20 @@ function GameHome({ player, solved }: { player: Player; solved: string[] }) {
     </section>
     <section className="puzzle-section">
       <div className="section-heading"><div><span className="eyebrow">LE PARCOURS</span><h2>Les énigmes</h2></div><Link className="text-link" to="/classement">Voir le classement <ArrowRight size={15} /></Link></div>
-      <div className="puzzle-grid">{puzzles.map((puzzle, index) => <PuzzleCard key={puzzle.id} puzzle={puzzle} index={index} solved={solved.includes(puzzle.id)} />)}</div>
+      <div className="puzzle-grid">
+        {puzzles.map((puzzle, index) => <PuzzleCard key={puzzle.id} puzzle={puzzle} index={index} solved={solved.includes(puzzle.id)} />)}
+        <RunnerCard bestScore={player.runnerBest ?? 0} />
+      </div>
     </section>
   </div>
+}
+
+function RunnerCard({ bestScore }: { bestScore: number }) {
+  return <Link to="/runner" className="puzzle-card runner-card">
+    <div className="puzzle-card-top"><span className="puzzle-number">08</span><span className="puzzle-status">JEU BONUS</span></div>
+    <div className="puzzle-card-art"><span className="art-orbit orbit-2"><span className="art-core"><Gamepad2 size={29} /></span></span><span className="art-caption">RUNNER 3D</span></div>
+    <div className="puzzle-card-bottom"><div><span className="card-kicker">MEILLEUR SCORE</span><h3>La course</h3></div><strong className="runner-card-record">{bestScore}</strong></div>
+  </Link>
 }
 
 function PuzzleCard({ puzzle, index, solved }: { puzzle: Puzzle; index: number; solved: boolean }) {

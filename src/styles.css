@@ -128,6 +128,9 @@ h1 em { color: var(--coral); font-weight: 500; }
 .puzzle-card-bottom { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .card-kicker { color: #858980; font-size: 8px; font-weight: 700; letter-spacing: 1px; }
 .puzzle-card h3 { margin: 4px 0 0; font: 500 17px/1.15 var(--serif); }
+.runner-card { border-color: #dfc5cf; background: linear-gradient(155deg, #fffefa, #f8e9ee); }
+.runner-card .puzzle-card-art { background: linear-gradient(145deg, #e1edf5, #f6e1ea); }
+.runner-card-record { color: var(--coral); font: 500 22px var(--serif); }
 .circle-arrow, .next-button { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border: 1px solid #dedbd1; border-radius: 50%; color: var(--green); transition: color .2s, background .2s; }
 .puzzle-card:hover .circle-arrow { color: white; background: var(--green); }
 .is-solved .puzzle-card-art { background: #e8f0f8; }
@@ -243,6 +246,33 @@ h1 em { color: var(--coral); font-weight: 500; }
 .treasure-letter-error { color: var(--muted); }
 .treasure-back-link { margin-top: 35px; padding: 12px 17px; border: 1px solid rgba(55, 111, 163, .32); color: var(--green); background: rgba(255, 254, 250, .75); font-size: 11px; font-weight: 700; }
 .treasure-back-link:hover { background: var(--green-light); }
+.runner-page { width: min(100% - 40px, 900px); margin: 0 auto; padding: 34px 0 45px; }
+.runner-heading { text-align: center; }
+.runner-heading .eyebrow { justify-content: center; }
+.runner-heading h1 { margin: 11px 0 7px; font-size: clamp(36px, 6vw, 56px); }
+.runner-heading > p { margin: 0 auto 20px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.runner-team-choice { width: min(100%, 380px); display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin: 0 auto 13px; }
+.runner-team-button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--line); color: var(--muted); background: rgba(255, 254, 250, .85); cursor: pointer; font-size: 10px; font-weight: 700; transition: background .2s, border-color .2s, color .2s; }
+.runner-team-button.groom.selected { border-color: var(--green); color: var(--green); background: var(--green-light); }
+.runner-team-button.bride.selected { border-color: var(--coral); color: var(--coral); background: var(--coral-light); }
+.runner-team-button:disabled { cursor: not-allowed; opacity: .65; }
+.runner-scoreboard { display: flex; justify-content: center; gap: 12px; margin-bottom: 12px; }
+.runner-scoreboard > div { min-width: 105px; padding: 7px 12px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; border: 1px solid var(--line); background: rgba(255, 254, 250, .85); }
+.runner-scoreboard span { color: var(--muted); font-size: 8px; font-weight: 700; letter-spacing: 1px; }
+.runner-scoreboard strong { color: var(--green); font: 500 22px var(--serif); }
+.runner-scene { height: clamp(220px, 46vh, 360px); position: relative; overflow: hidden; border: 1px solid #a8cfe4; background: linear-gradient(180deg, #8ed0f4 0%, #c5e9fb 66%, #e4f4fb 100%); box-shadow: inset 0 -12px 30px rgba(57, 118, 148, .1); }
+.runner-scene canvas { width: 100%; height: 100%; touch-action: none; }
+.runner-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 11px; background: rgba(246, 243, 235, .72); color: var(--ink); text-align: center; }
+.runner-overlay > strong { font: 500 25px var(--serif); }
+.runner-overlay > span:not(.scene-loading-spinner) { color: var(--muted); font-size: 11px; }
+.runner-start-button { min-width: 160px; min-height: 44px; margin-top: 5px; }
+.runner-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 13px; }
+.runner-control-button { min-height: 62px; display: flex; align-items: center; justify-content: center; gap: 9px; border: 1px solid #a9c5d5; color: #2f6790; background: #e6f0f7; cursor: pointer; touch-action: manipulation; user-select: none; }
+.runner-roll-button { border-color: #d7afc0; color: #a14268; background: #f7e8ee; }
+.runner-control-button span { font-size: 11px; font-weight: 700; }
+.runner-control-button:disabled { opacity: .48; cursor: not-allowed; }
+.runner-saving { margin: 10px 0 0; color: var(--green); font-size: 10px; text-align: center; }
+.runner-note { max-width: 580px; margin: 13px auto 0; color: var(--muted); font-size: 9px; line-height: 1.5; text-align: center; }
 .puzzle-image { display: block; max-width: min(100%, 620px); max-height: 330px; object-fit: cover; margin-bottom: 20px; }
 .puzzle-image-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
 .puzzle-image-item { min-width: 0; margin: 0; }
@@ -262,6 +292,7 @@ h1 em { color: var(--coral); font-weight: 500; }
   .site-footer { min-height: 44px; padding: 0 16px; font-size: 6px; letter-spacing: .8px; }.site-footer span:last-child { display: none; }
   .register-layout { display: flex; flex-direction: column; align-items: stretch; gap: 28px; padding: 48px 20px 42px; }.register-copy { padding: 0; }.register-copy h1 { font-size: 54px; margin: 19px 0 12px; }.intro-copy { font-size: 12px; }.team-scene { width: 100%; max-width: 470px; height: 350px; margin: 8px auto 14px; }.scene-labels { bottom: 8px; font-size: 7px; }.ornament { margin: 19px 0; }.count-note { display: none; }.join-panel { padding: 22px 18px; }.team-choice { min-height: 132px; padding: 11px; }.team-name { font-size: 16px; }
   .content-wrap { width: calc(100% - 40px); padding: 38px 0 52px; }.welcome-row { align-items: flex-start; }.welcome-row h1 { font-size: 45px; }.welcome-row .intro-copy { max-width: 250px; }.progress-seal { min-width: 112px; padding: 10px; grid-template-columns: 1fr; }.progress-seal strong { grid-row: auto; font-size: 23px; }.progress-seal > span { font-size: 7px; }.seal-track { margin-top: 6px; }
+  .runner-page { width: calc(100% - 28px); padding: 25px 0 35px; }.runner-heading h1 { font-size: 39px; }.runner-heading > p { max-width: 330px; }.runner-team-choice { max-width: 340px; }.runner-team-button { min-height: 48px; }.runner-scene { height: 34svh; min-height: 230px; max-height: 330px; }.runner-control-button { min-height: 68px; flex-direction: column; gap: 2px; }.runner-controls { gap: 8px; }
   .section-heading { align-items: flex-end; gap: 10px; }.section-heading h2 { font-size: 25px; }.text-link { font-size: 9px; white-space: nowrap; }.puzzle-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }.puzzle-card { padding: 11px; }.puzzle-card-art { height: 105px; }.puzzle-card h3 { font-size: 15px; }.puzzle-card-bottom { min-height: 40px; }.circle-arrow { width: 26px; height: 26px; }
   .back-link { margin-bottom: 28px; }.puzzle-detail-grid { display: flex; flex-direction: column; gap: 22px; }.puzzle-detail-main h1 { font-size: 48px; margin: 16px 0 22px; }.riddle-paper { min-height: 170px; padding: 23px 20px; }.riddle-paper p { font-size: 20px; margin: 30px 0 22px; }.puzzle-side { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding-top: 0; }.side-card-highlight { min-height: 126px; padding: 14px; }.side-index { font-size: 28px; }.side-label { font-size: 7px; margin-top: 8px; }.side-heart { width: 66px; height: 66px; }.score-card { margin: 0; padding: 14px; }.score-card h3 { margin-top: 8px; font-size: 28px; }.score-caption { margin-bottom: 12px; }.puzzle-pagination { margin-top: 28px; }
   .leaderboard-page > h1 { font-size: 49px; }.leaderboard-couple { margin: -10px auto 16px; }.leaderboard-couple .team-scene { width: 100%; max-width: 470px; height: 290px; }.team-scoreboard { padding: 18px 14px; }.scoreboard-heading h2 { font-size: 24px; }.team-score-grid { gap: 8px; }.team-score { padding: 12px 10px; }.team-score-head { font-size: 9px; gap: 5px; }.team-score > strong { font-size: 26px; }.ranking-row { grid-template-columns: 25px 7px minmax(75px, 1fr) 58px; gap: 7px; padding: 0 6px; }.rank-team-name { display: none; }.rank-points { font-size: 15px; }.rank-name { font-size: 10px; }.rank-name small { display: none; }

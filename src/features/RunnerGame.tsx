@@ -1,7 +1,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Clone, useAnimations, useFBX, useGLTF } from '@react-three/drei'
-import { ArrowDown, ArrowLeft, ArrowUp, Crown, Heart, Play, RotateCcw } from 'lucide-react'
+import { ArrowDown, ArrowUp, Crown, Heart, Play } from 'lucide-react'
 import { Box3, CanvasTexture, LoopOnce, LoopRepeat, RepeatWrapping, SRGBColorSpace, Vector3, type AnimationAction, type AnimationClip, type Group, type Mesh } from 'three'
 import type { Team } from '../lib/gameStore'
 
@@ -186,7 +186,7 @@ function ObstacleModel({ kind }: { kind: ObstacleKind }) {
   </group>
 }
 
-function ParallaxLayer({ asset, count, y, z, spacing, speed, size, tint, running = true }: {
+function ParallaxLayer({ asset, count, y, z, spacing, speed, size, running = true }: {
   asset: string
   count: number
   y: number
@@ -194,7 +194,6 @@ function ParallaxLayer({ asset, count, y, z, spacing, speed, size, tint, running
   spacing: number
   speed: number
   size: number
-  tint?: string
   running?: boolean
 }) {
   const { scene } = useGLTF(asset)
@@ -238,7 +237,7 @@ function ParallaxLayer({ asset, count, y, z, spacing, speed, size, tint, running
       scale={modelScale * (asset.includes('cloud') && item.variant % 2 === 1 ? 0.78 : 1)}
       rotation={[0, asset.includes('cloud') ? 0 : (item.variant % 3 - 1) * 0.045, 0]}
     >
-      <Clone object={scene} position={[-modelCenter.x, -modelBounds.min.y, -modelCenter.z]} tint={tint} />
+      <Clone object={scene} position={[-modelCenter.x, -modelBounds.min.y, -modelCenter.z]} />
     </group>)}
   </>
 }

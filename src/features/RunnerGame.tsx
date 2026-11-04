@@ -23,6 +23,8 @@ const CAKE_COLLIDER_HEIGHT_RATIO = 0.35
 const PLAYER_COLLIDER_WIDTH_RATIO = 0.4
 const OBSTACLE_COLLIDER_WIDTH_RATIO = 0.4
 const PLANE_FLOAT_AMPLITUDE = 0.12
+const JUMP_HEIGHT = 1.55
+const JUMP_DURATION_SCALE = 1.25
 
 const RUNNER_LIGHT_PHASES = [
   { ambient: '#e7f2df', ambientIntensity: 0.4, sky: '#c5e1b8', ground: '#456844', hemisphereIntensity: 0.58, sunlight: '#e4efb2', sunlightIntensity: 0.9, background: '#a9cda9', fogDensity: 0.04, sunPosition: [-2, 4.5, 5] },
@@ -100,6 +102,7 @@ function RunnerCharacter({ team, action, collider, onActionFinished }: { team: T
     const previousAction = currentAction.current
     nextAction.reset()
     nextAction.setLoop(action === 'run' ? LoopRepeat : LoopOnce, action === 'run' ? Infinity : 1)
+    nextAction.setEffectiveTimeScale(action === 'jump' ? 1 / JUMP_DURATION_SCALE : 1)
     nextAction.clampWhenFinished = action !== 'run'
     nextAction.play()
     if (previousAction && previousAction !== nextAction) {
@@ -140,9 +143,9 @@ function RunnerCharacter({ team, action, collider, onActionFinished }: { team: T
     if (!character) return
     if (action === 'jump') {
       jumpElapsed.current += delta
-      const duration = Math.max(actions.jump?.getClip().duration ?? 0.9, 0.1)
+      const duration = Math.max((actions.jump?.getClip().duration ?? 0.9) * JUMP_DURATION_SCALE, 0.1)
       const progress = Math.min(jumpElapsed.current / duration, 1)
-      character.position.y = footOffset + Math.sin(progress * Math.PI) * 1.25
+      character.position.y = footOffset + Math.sin(progress * Math.PI) * JUMP_HEIGHT
     } else {
       character.position.y = footOffset
     }

@@ -19,7 +19,9 @@ Une énigme peut aussi utiliser `images` pour afficher plusieurs visuels compara
 
 La limite est de trois tentatives par défaut. Pour la modifier sur une énigme, ajouter `maxAttempts: 1` (ou un autre nombre) à son entrée; les tentatives sont conservées dans Firestore ou dans le stockage local du navigateur.
 
-La tuile 08 ouvre le runner 3D. Les FBX attendus sont `public/models/game/Fast Run.fbx` (personnage/course), `Jump.fbx` et `Sprinting Forward Roll.fbx`. Les commandes sont flèche haut/espace pour sauter et flèche bas pour rouler; les boutons tactiles sont affichés sous la scène. Les parties sont illimitées : seul le nouveau record personnel ajoute la différence au score total, une seule fois.
+La tuile 08 ouvre le runner 3D. Les FBX attendus sont dans `public/models/game/`; le personnage sélectionné et ses animations sont préchargés dès que son profil est prêt, avant l’ouverture du runner. Cela télécharge environ 48 à 54 Mo selon l’équipe; le préchargement est sauté si le navigateur active `Save-Data`. Les commandes sont flèche haut/espace pour sauter et flèche bas pour rouler; les boutons tactiles sont affichés sous la scène. Les parties sont illimitées : seul le nouveau record personnel ajoute la différence au score total, une seule fois.
+
+Netlify sert les fichiers sous `/models/*` avec `Cache-Control: public, max-age=31536000, immutable`. Le navigateur peut ainsi réutiliser les FBX et GLB sans les télécharger à nouveau pendant un an. Comme ces fichiers n'ont pas de nom hashé automatiquement, donne un nouveau nom à un modèle quand tu remplaces son contenu et mets à jour ses références dans le code; sinon les visiteurs pourraient conserver l'ancienne version en cache.
 
 L'énigme 5 est une chasse aux cinq lettres du mot `BAGUE`. Les chemins QR sont définis dans `src/data/treasureClues.ts`; chaque page affiche uniquement sa lettre et le lien de retour au jeu. Dans l'administration (`/admin-2027`), saisir le domaine de production puis copier chaque URL pour générer les QR codes. Les URL sont accessibles sans inscription et les liens profonds sont réécrits vers l'application par la configuration Netlify.
 
@@ -54,3 +56,5 @@ npm run preview
 ```
 
 Le dossier `dist/` peut être déployé sur Netlify en tant que site statique. Configurer `npm run build` comme commande de build et `dist` comme dossier de publication.
+
+Vite ajoute automatiquement un hash de contenu aux bundles de production sous `dist/assets/`. Netlify leur applique un cache navigateur d'un an (`immutable`); `index.html` est revalidé à chaque visite pour référencer les nouveaux bundles après un déploiement. Les fichiers placés dans `public/` ne sont pas renommés ni hashés automatiquement : pour les modèles sous `public/models/`, change leur nom lorsque leur contenu est remplacé.

@@ -7,7 +7,7 @@ import TeamScene from './features/TeamScene'
 import AdminPage from './features/AdminPage'
 import FormattedText from './components/FormattedText'
 import TreasureLetterPage from './features/TreasureLetterPage'
-import RunnerGame from './features/RunnerGame'
+import RunnerGame, { preloadRunnerCharacter } from './features/RunnerGame'
 import { treasureClues } from './data/treasureClues'
 
 function App() {
@@ -42,6 +42,13 @@ function App() {
       unsubscribePlayers?.()
     }
   }, [isTreasurePage])
+
+  useEffect(() => {
+    if (!player || isTreasurePage) return
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
+    if (connection?.saveData) return
+    preloadRunnerCharacter(player.team)
+  }, [isTreasurePage, player?.team, player?.uid])
 
   async function register(name: string, team: Team) {
     const uid = await getSessionUid()

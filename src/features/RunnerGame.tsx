@@ -31,6 +31,14 @@ const runnerAssets: Record<Team, { run: string; jump: string; roll: string; fall
   },
 }
 
+export function preloadRunnerCharacter(team: Team): void {
+  const assets = runnerAssets[team]
+  useFBX.preload(assets.run)
+  useFBX.preload(assets.jump)
+  useFBX.preload(assets.roll)
+  useFBX.preload(assets.fall)
+}
+
 function RunnerCharacter({ team, action, onActionFinished }: { team: Team; action: RunnerAction; onActionFinished: (action: RunnerAction) => void }) {
   const assets = runnerAssets[team]
   const model = useFBX(assets.run) as AnimatedGroup

@@ -1,19 +1,20 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { useAnimations, useFBX } from '@react-three/drei'
+import { useAnimations, useFBX, useGLTF } from '@react-three/drei'
 import { Box3, MathUtils, Object3D, PerspectiveCamera, Vector3, type AnimationClip, type Group, type Mesh, type PointLight, type SpotLight } from 'three'
 import type { Team } from '../lib/gameStore'
+import { animatedModelBounds } from '../lib/animatedModelBounds'
 
 type AnimatedGroup = Group & { animations: AnimationClip[] }
 
 const modelPaths: Record<Team, string> = {
-  marie: '/models/groom-idle.fbx',
-  mariee: '/models/bride-idle.fbx',
+  marie: '/models/groom/groom-idle.fbx',
+  mariee: '/models/bride/bride-idle.fbx',
 }
 
 const animationPaths: Record<Team, string> = {
-  marie: '/models/groom-dance.fbx',
-  mariee: '/models/bride-dance.fbx',
+  marie: '/models/groom/groom-silly-dance.fbx',
+  mariee: '/models/bride/bride-belly-dance.fbx',
 }
 
 function PreloadDanceAnimations() {
@@ -22,15 +23,15 @@ function PreloadDanceAnimations() {
   return null
 }
 
-function CharacterAnimation({ team, model, active }: { team: Team; model: AnimatedGroup; active: boolean }) {
+function CharacterAnimation({ team, model, idleAnimation, active }: { team: Team; model: Group; idleAnimation: AnimatedGroup; active: boolean }) {
   const danceModel = useFBX(animationPaths[team]) as AnimatedGroup
   const clips = useMemo(() => {
-    const idleClip = model.animations[0]?.clone()
+    const idleClip = idleAnimation.animations[0]?.clone()
     const danceClip = danceModel.animations[0]?.clone()
     if (idleClip) idleClip.name = 'idle'
     if (danceClip) danceClip.name = 'dance'
     return [idleClip, danceClip].filter((clip): clip is AnimationClip => Boolean(clip))
-  }, [danceModel, model])
+  }, [danceModel, idleAnimation])
   const { actions } = useAnimations(clips, model)
 
   useEffect(() => {
@@ -51,9 +52,30 @@ function CharacterAnimation({ team, model, active }: { team: Team; model: Animat
   return null
 }
 
-function Character({ team, active, hasSelection, position }: { team: Team; active: boolean; hasSelection: boolean; position: [number, number, number] }) {
-  const model = useFBX(modelPaths[team]) as AnimatedGroup
-  const modelBottom = useMemo(() => new Box3().setFromObject(model).min.y, [model])
+type CharacterProps = { team: Team; active: boolean; hasSelection: boolean; position: [number, number, number] }
+
+function Character(props: CharacterProps) {
+  return props.team === 'marie' ? <GroomCharacter {...props} /> : <BrideCharacter {...props} />
+}
+
+function GroomCharacter(props: CharacterProps) {
+  const { scene } = useGLTF('/models/groom/groom.glb')
+  const idleAnimation = useFBX(modelPaths.marie) as AnimatedGroup
+  scene.rotation.x = -Math.PI / 2
+  return <AnimatedCharacter {...props} model={scene} idleAnimation={idleAnimation} modelScale={1.6} />
+}
+
+function BrideCharacter(props: CharacterProps) {
+  const { scene } = useGLTF('/models/bride/bride.glb')
+  const idleAnimation = useFBX(modelPaths.mariee) as AnimatedGroup
+  scene.rotation.x = -Math.PI / 2
+  return <AnimatedCharacter {...props} model={scene} idleAnimation={idleAnimation} modelScale={1.6} />
+}
+
+function AnimatedCharacter({ team, active, hasSelection, position, model, idleAnimation, modelScale }: CharacterProps & { model: Group; idleAnimation: AnimatedGroup; modelScale: number }) {
+  const modelBottom = useMemo(() => (idleAnimation.animations[0]
+    ? animatedModelBounds(model, idleAnimation.animations[0])
+    : new Box3().setFromObject(model)).min.y, [idleAnimation, model, team])
 
   useEffect(() => {
     model.traverse((object) => {
@@ -67,12 +89,14 @@ function Character({ team, active, hasSelection, position }: { team: Team; activ
 
   const depthOffset = active ? 0.3 : hasSelection ? -0.75 : 0
   const characterScale = active ? 1.12 : hasSelection ? 0.84 : 1
-  const unscaledFootY = -1.35 + modelBottom * 0.016
+  const unscaledFootY = -1.35 + modelBottom * modelScale
   const verticalOffset = -1.4 - characterScale * unscaledFootY
 
   return <group position={[position[0], verticalOffset, position[2] + depthOffset]} scale={characterScale}>
-    <primitive object={model} scale={0.016} position={[0, -1.35, 0]} />
-    <CharacterAnimation team={team} model={model} active={active} />
+    <group scale={modelScale} position={[0, -1.35, 0]}>
+      <primitive object={model} />
+    </group>
+    <CharacterAnimation team={team} model={model} idleAnimation={idleAnimation} active={active} />
   </group>
 }
 
@@ -84,7 +108,7 @@ function CameraFocus({ team }: { team?: Team }) {
 
   useFrame((_, delta) => {
     const focusX = team === 'marie' ? -0.75 : team === 'mariee' ? 0.75 : 0
-    cameraTarget.current.set(focusX * 0.7, 0.35, team ? 7.15 : 7.4)
+    cameraTarget.current.set(focusX * 0.7, 0.35, team === 'mariee' ? 8.4 : team ? 7.15 : 7.4)
     lookTarget.current.set(focusX, 0.32, 0)
     const smoothness = 1 - Math.exp(-delta * 1.5)
     camera.position.lerp(cameraTarget.current, smoothness)

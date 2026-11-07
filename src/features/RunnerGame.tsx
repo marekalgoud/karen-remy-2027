@@ -5,6 +5,7 @@ import { ArrowDown, ArrowUp, Crown, Heart, Play } from 'lucide-react'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { AmbientLight, Box3, CanvasTexture, Color, DirectionalLight, FogExp2, HemisphereLight, LoopOnce, LoopRepeat, RepeatWrapping, SRGBColorSpace, Vector3, type AnimationAction, type AnimationClip, type Group, type Mesh } from 'three'
 import type { Team } from '../lib/gameStore'
+import { animatedModelBounds } from '../lib/animatedModelBounds'
 
 type RunnerAction = 'run' | 'jump' | 'roll' | 'falling'
 type GameStatus = 'ready' | 'running' | 'crashing' | 'over'
@@ -17,7 +18,6 @@ type ObstacleCollider = { halfWidth: number; height: number }
 
 const PLAYER_X = -2.4
 const FLOOR_Y = -1.4
-const MODEL_SCALE = 0.016
 const ROLL_COLLIDER_HEIGHT = 1.3
 const CAKE_COLLIDER_HEIGHT_RATIO = 0.35
 const PLAYER_COLLIDER_WIDTH_RATIO = 0.4
@@ -35,40 +35,62 @@ const RUNNER_LIGHT_PHASES = [
 
 const runnerAssets: Record<Team, { run: string; jump: string; roll: string; fall: string }> = {
   marie: {
-    run: '/models/game/groom-run.fbx',
-    jump: '/models/game/groom-jump.fbx',
-    roll: '/models/game/groom-roll.fbx',
-    fall: '/models/game/groom-fall.fbx',
+    run: '/models/groom/groom-run.fbx',
+    jump: '/models/groom/groom-jump.fbx',
+    roll: '/models/groom/groom-roll.fbx',
+    fall: '/models/groom/groom-fall.fbx',
   },
   mariee: {
-    run: '/models/game/bride-run.fbx',
-    jump: '/models/game/bride-jump.fbx',
-    roll: '/models/game/bride-roll.fbx',
-    fall: '/models/game/bride-falling.fbx',
+    run: '/models/bride/bride-run.fbx',
+    jump: '/models/bride/bride-jump.fbx',
+    roll: '/models/bride/bride-roll.fbx',
+    fall: '/models/bride/bride-fall.fbx',
   },
 }
 
 export function preloadRunnerCharacter(team: Team): void {
   const assets = runnerAssets[team]
+  useGLTF.preload(team === 'marie' ? '/models/groom/groom.glb' : '/models/bride/bride.glb')
   useFBX.preload(assets.run)
   useFBX.preload(assets.jump)
   useFBX.preload(assets.roll)
   useFBX.preload(assets.fall)
 }
 
-function RunnerCharacter({ team, action, collider, onActionFinished }: { team: Team; action: RunnerAction; collider: { current: PlayerCollider }; onActionFinished: (action: RunnerAction) => void }) {
+type RunnerCharacterProps = { team: Team; action: RunnerAction; collider: { current: PlayerCollider }; onActionFinished: (action: RunnerAction) => void }
+
+function RunnerCharacter(props: RunnerCharacterProps) {
+  return props.team === 'marie' ? <GroomRunnerCharacter {...props} /> : <BrideRunnerCharacter {...props} />
+}
+
+function GroomRunnerCharacter(props: RunnerCharacterProps) {
+  const { scene } = useGLTF('/models/groom/groom.glb')
+  const runAnimation = useFBX(runnerAssets.marie.run) as AnimatedGroup
+  scene.rotation.x = -Math.PI / 2
+  return <AnimatedRunnerCharacter {...props} model={scene} runAnimation={runAnimation} modelScale={1.6} />
+}
+
+function BrideRunnerCharacter(props: RunnerCharacterProps) {
+  const { scene } = useGLTF('/models/bride/bride.glb')
+  const runAnimation = useFBX(runnerAssets.mariee.run) as AnimatedGroup
+  scene.rotation.x = -Math.PI / 2
+  return <AnimatedRunnerCharacter {...props} model={scene} runAnimation={runAnimation} modelScale={1.6} />
+}
+
+function AnimatedRunnerCharacter({ team, action, collider, onActionFinished, model, runAnimation, modelScale }: RunnerCharacterProps & { model: Group; runAnimation: AnimatedGroup; modelScale: number }) {
   const assets = runnerAssets[team]
-  const model = useFBX(assets.run) as AnimatedGroup
   const jumpAnimation = useFBX(assets.jump) as AnimatedGroup
   const rollAnimation = useFBX(assets.roll) as AnimatedGroup
   const fallAnimation = useFBX(assets.fall) as AnimatedGroup
-  const modelBounds = useMemo(() => new Box3().setFromObject(model), [model])
+  const modelBounds = useMemo(() => runAnimation.animations[0]
+    ? animatedModelBounds(model, runAnimation.animations[0])
+    : new Box3().setFromObject(model), [model, runAnimation, team])
   const modelBottom = modelBounds.min.y
   const modelSize = useMemo(() => modelBounds.getSize(new Vector3()), [modelBounds])
   const characterRef = useRef<Group>(null)
   const jumpElapsed = useRef(0)
   const clips = useMemo(() => {
-    const runClip = model.animations[0]?.clone()
+    const runClip = runAnimation.animations[0]?.clone()
     const jumpClip = jumpAnimation.animations[0]?.clone()
     const rollClip = rollAnimation.animations[0]?.clone()
     const fallClip = fallAnimation.animations[0]?.clone()
@@ -77,7 +99,7 @@ function RunnerCharacter({ team, action, collider, onActionFinished }: { team: T
     if (rollClip) rollClip.name = 'roll'
     if (fallClip) fallClip.name = 'falling'
     return [runClip, jumpClip, rollClip, fallClip].filter((clip): clip is AnimationClip => Boolean(clip))
-  }, [fallAnimation, jumpAnimation, model, rollAnimation])
+  }, [fallAnimation, jumpAnimation, runAnimation, rollAnimation])
   const { actions, mixer } = useAnimations(clips, model)
   const currentAction = useRef<AnimationAction | null>(null)
 
@@ -132,7 +154,7 @@ function RunnerCharacter({ team, action, collider, onActionFinished }: { team: T
     })
   }, [model])
 
-  const footOffset = FLOOR_Y - MODEL_SCALE * modelBottom
+  const footOffset = FLOOR_Y - modelScale * modelBottom
 
   useEffect(() => {
     if (action === 'jump') jumpElapsed.current = 0
@@ -149,13 +171,13 @@ function RunnerCharacter({ team, action, collider, onActionFinished }: { team: T
     } else {
       character.position.y = footOffset
     }
-    const bottom = character.position.y + MODEL_SCALE * modelBottom
-    collider.current.halfWidth = Math.max(modelSize.x, modelSize.z) * MODEL_SCALE * PLAYER_COLLIDER_WIDTH_RATIO
+    const bottom = character.position.y + modelScale * modelBottom
+    collider.current.halfWidth = Math.max(modelSize.x, modelSize.z) * modelScale * PLAYER_COLLIDER_WIDTH_RATIO
     collider.current.bottom = bottom
-    collider.current.top = bottom + Math.min(modelSize.y * MODEL_SCALE, action === 'roll' ? ROLL_COLLIDER_HEIGHT : Infinity)
+    collider.current.top = bottom + Math.min(modelSize.y * modelScale, action === 'roll' ? ROLL_COLLIDER_HEIGHT : Infinity)
   })
 
-  return <group ref={characterRef} position={[PLAYER_X, footOffset, 0]} rotation={[0, Math.PI / 2, 0]} scale={MODEL_SCALE}>
+  return <group ref={characterRef} position={[PLAYER_X, footOffset, 0]} rotation={[0, Math.PI / 2, 0]} scale={modelScale}>
     <primitive object={model} />
   </group>
 }

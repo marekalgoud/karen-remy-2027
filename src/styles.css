@@ -16,6 +16,43 @@
   --serif: 'Fraunces', Georgia, serif;
 }
 
+.dance-page { width: min(100% - 40px, 760px); margin: 0 auto; padding: 32px 0 64px; }
+.dance-heading { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin: 30px 0 20px; color: var(--coral); }
+.dance-heading h1 { margin: 12px 0 0; color: var(--ink); font-size: 46px; }
+.dance-scoreboard { display: grid; grid-template-columns: repeat(3, 1fr); border-block: 1px solid var(--line); }
+.dance-scoreboard > div { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.dance-scoreboard > div + div { border-left: 1px solid var(--line); }
+.dance-scoreboard span { color: var(--muted); font-size: 9px; font-weight: 700; }
+.dance-scoreboard strong { font: 500 24px var(--serif); }
+.dance-level { display: flex; justify-content: space-between; gap: 12px; padding: 10px 16px; color: var(--muted); font-size: 9px; font-weight: 700; }
+.dance-level span { display: flex; align-items: center; gap: 8px; }
+.dance-level strong { color: var(--coral); font-size: 13px; }
+.dance-stage { position: relative; height: 340px; overflow: hidden; background: transparent; }
+.dance-stage canvas { width: 100%; height: 100%; }
+.dance-stage-loading { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; gap: 10px; background: rgba(246, 243, 235, .85); font-size: 12px; }
+.dance-stage-labels { position: absolute; bottom: 12px; left: 18%; right: 18%; display: flex; justify-content: space-between; color: #344b4d; font-size: 9px; font-weight: 700; pointer-events: none; }
+.dance-play-area { padding: 22px 0 0; text-align: center; }
+.dance-status { min-height: 28px; font: 600 21px var(--serif); }
+.dance-sequence { min-height: 66px; padding: 8px 0; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; }
+.dance-symbol { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--line); background: var(--white); color: var(--green); }
+.dance-symbol.is-entered { color: var(--coral); background: var(--coral-light); border-color: #e8c1d1; }
+.dance-symbol-dot { width: 6px; height: 6px; border-radius: 50%; background: #c9c9c2; }
+.dance-start { min-height: 66px; padding: 8px 0; }
+.dance-start p { margin: 0 0 8px; color: var(--muted); }
+.dance-start-button { min-height: 44px; padding: 0 24px; }
+.dance-controls { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; max-width: 470px; margin: 12px auto 0; }
+.dance-controls button { display: grid; place-items: center; aspect-ratio: 1; min-height: 48px; border: 1px solid #b9cddd; background: #eaf3fb; color: var(--green); cursor: pointer; touch-action: manipulation; }
+.dance-controls button:nth-last-child(-n+2) { border-color: #e7c4d2; background: #f9eaf1; color: var(--coral); }
+.dance-controls button:active:not(:disabled) { transform: translateY(2px); background: #d3e4f2; }
+.dance-controls button:disabled { opacity: .42; cursor: default; }
+@media (max-width: 480px) {
+  .dance-heading h1 { font-size: 38px; }
+  .dance-scoreboard > div { padding: 10px 6px; }
+  .dance-scoreboard strong { font-size: 20px; }
+  .dance-stage { height: 280px; }
+  .dance-controls { gap: 5px; }
+}
+
 #nl-badge-frame { display: none; }
 
 * { box-sizing: border-box; }

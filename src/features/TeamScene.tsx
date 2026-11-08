@@ -13,8 +13,8 @@ const modelPaths: Record<Team, string> = {
 }
 
 const animationPaths: Record<Team, string> = {
-  marie: '/models/groom/groom-silly-dance.fbx',
-  mariee: '/models/bride/bride-belly-dance.fbx',
+  marie: '/models/groom/dance/groom-silly-dance.fbx',
+  mariee: '/models/bride/dance/bride-belly-dance.fbx',
 }
 
 function PreloadDanceAnimations() {

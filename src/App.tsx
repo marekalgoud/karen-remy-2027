@@ -8,6 +8,7 @@ import AdminPage from './features/AdminPage'
 import FormattedText from './components/FormattedText'
 import TreasureLetterPage from './features/TreasureLetterPage'
 import RunnerGame, { preloadRunnerCharacter } from './features/RunnerGame'
+import DanceBattle from './features/DanceBattle'
 import { treasureClues } from './data/treasureClues'
 
 function App() {
@@ -104,6 +105,7 @@ function App() {
           <Route path="/" element={player ? <GameHome player={player} solved={solved} /> : <Registration onRegister={register} />} />
           <Route path="/enigme/:id" element={player ? <PuzzlePage solved={solved} attemptCounts={attemptCounts} onSolve={solve} /> : <Navigate to="/" replace />} />
           <Route path="/runner" element={player ? <RunnerGame initialTeam={player.team} bestScore={player.runnerBest ?? 0} onBestScore={saveRunnerRecord} /> : <Navigate to="/" replace />} />
+          <Route path="/dance-battle" element={player ? <DanceBattle /> : <Navigate to="/" replace />} />
           <Route path="/classement" element={player ? <Leaderboard players={players} player={player} /> : <Navigate to="/" replace />} />
           <Route path="/admin-2027" element={<AdminPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -177,6 +179,11 @@ function GameHome({ player, solved }: { player: Player; solved: string[] }) {
       <div className="puzzle-grid">
         {puzzles.map((puzzle, index) => <PuzzleCard key={puzzle.id} puzzle={puzzle} index={index} solved={solved.includes(puzzle.id)} />)}
         <RunnerCard bestScore={player.runnerBest ?? 0} />
+        <Link to="/dance-battle" className="puzzle-card runner-card">
+          <div className="puzzle-card-top"><span className="puzzle-number">09</span><span className="puzzle-status">JEU BONUS</span></div>
+          <div className="puzzle-card-art"><span className="art-orbit orbit-2"><span className="art-core"><Sparkles size={29} /></span></span><span className="art-caption">DANCE BATTLE</span></div>
+          <div className="puzzle-card-bottom"><div><span className="card-kicker">MÉMOIRE & DANSE</span><h3>Dance battle</h3></div><span className="circle-arrow"><ArrowRight size={17} /></span></div>
+        </Link>
       </div>
     </section>
   </div>

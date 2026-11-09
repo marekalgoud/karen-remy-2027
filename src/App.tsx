@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ArrowDownRight, ArrowLeft, ArrowRight, Check, ChevronRight, Cross, Crown, Diamond, Gamepad2, Heart, Medal, Sparkles, Trophy, Users } from 'lucide-react'
 import { puzzles, type Puzzle } from './data/puzzles'
-import { getAttempts, getSessionUid, getSolved, isCloudMode, loadPlayer, recordRunnerBest, savePlayer, subscribePlayers, submitAnswer, type Player, type Team } from './lib/gameStore'
+import { getAttempts, getSessionUid, getSolved, isCloudMode, loadPlayer, recordDanceBest, recordRunnerBest, savePlayer, subscribePlayers, submitAnswer, type Player, type Team } from './lib/gameStore'
 import TeamScene from './features/TeamScene'
 import AdminPage from './features/AdminPage'
 import FormattedText from './components/FormattedText'
@@ -84,6 +84,14 @@ function App() {
     return updatedPlayer.runnerBest ?? 0
   }
 
+  async function saveDanceRecord(danceScore: number): Promise<number> {
+    if (!player) return 0
+    const updatedPlayer = await recordDanceBest(player, danceScore)
+    setPlayer(updatedPlayer)
+    if (!isCloudMode) setPlayers((current) => [...current.filter((entry) => entry.uid !== updatedPlayer.uid), updatedPlayer])
+    return updatedPlayer.danceBest ?? 0
+  }
+
   if (isTreasurePage) return <TreasureLetterPage clue={treasureClue} />
   if (loading) return <div className="loading-screen"><span className="loading-mark"><Heart size={20} /></span><span>On prépare le jeu…</span></div>
 
@@ -105,9 +113,9 @@ function App() {
           <Route path="/" element={player ? <GameHome player={player} solved={solved} /> : <Registration onRegister={register} />} />
           <Route path="/enigme/:id" element={player ? <PuzzlePage solved={solved} attemptCounts={attemptCounts} onSolve={solve} /> : <Navigate to="/" replace />} />
           <Route path="/runner" element={player ? <RunnerGame initialTeam={player.team} bestScore={player.runnerBest ?? 0} onBestScore={saveRunnerRecord} /> : <Navigate to="/" replace />} />
-          <Route path="/dance-battle" element={player ? <DanceBattle /> : <Navigate to="/" replace />} />
+          <Route path="/dance-battle" element={player ? <DanceBattle bestScore={player.danceBest ?? 0} onBestScore={saveDanceRecord} /> : <Navigate to="/" replace />} />
           <Route path="/classement" element={player ? <Leaderboard players={players} player={player} /> : <Navigate to="/" replace />} />
-          <Route path="/admin-2027" element={<AdminPage />} />
+          <Route path="/admin-2027/*" element={<AdminPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
@@ -182,7 +190,7 @@ function GameHome({ player, solved }: { player: Player; solved: string[] }) {
         <Link to="/dance-battle" className="puzzle-card runner-card">
           <div className="puzzle-card-top"><span className="puzzle-number">09</span><span className="puzzle-status">JEU BONUS</span></div>
           <div className="puzzle-card-art"><span className="art-orbit orbit-2"><span className="art-core"><Sparkles size={29} /></span></span><span className="art-caption">DANCE BATTLE</span></div>
-          <div className="puzzle-card-bottom"><div><span className="card-kicker">MÉMOIRE & DANSE</span><h3>Dance battle</h3></div><span className="circle-arrow"><ArrowRight size={17} /></span></div>
+          <div className="puzzle-card-bottom"><div><span className="card-kicker">MEILLEUR SCORE</span><h3>Dance battle</h3></div><strong className="runner-card-record">{player.danceBest ?? 0}</strong></div>
         </Link>
       </div>
     </section>

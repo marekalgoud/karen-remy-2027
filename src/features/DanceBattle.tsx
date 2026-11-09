@@ -3,7 +3,7 @@ import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
 import { Clone, useAnimations, useFBX, useGLTF } from '@react-three/drei'
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Circle, Music2, Play, Star } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { Box3, CanvasTexture, DoubleSide, LoopOnce, Object3D, SRGBColorSpace, Vector3, type AnimationAction, type AnimationClip, type Group, type Mesh, type SpotLight } from 'three'
+import { Box3, CanvasTexture, DoubleSide, LoopOnce, LoopRepeat, Object3D, SRGBColorSpace, Vector3, type AnimationAction, type AnimationClip, type Group, type Mesh, type SpotLight } from 'three'
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js'
 import { animatedModelBounds } from '../lib/animatedModelBounds'
 import DiscoLights from './DiscoLights'
@@ -85,9 +85,12 @@ function Character({ team, dancer, defeated, victory, danceIndex, onDanceFinishe
     if (!action || (action === currentAction.current && (action.isRunning() || action.paused))) return
     action.reset()
     action.setEffectiveTimeScale(1).setEffectiveWeight(1)
-    if (name.startsWith('dance-') || name === 'defeated' || name === 'victory') {
+    if (name.startsWith('dance-') || name === 'defeated') {
       action.setLoop(LoopOnce, 1)
       action.clampWhenFinished = true
+    } else if (name === 'victory') {
+      action.setLoop(LoopRepeat, Infinity)
+      action.clampWhenFinished = false
     }
     action.play()
     if (currentAction.current && currentAction.current !== action) currentAction.current.crossFadeTo(action, 0.2, false)
@@ -284,10 +287,15 @@ function SymbolIcon({ symbol, size = 22 }: { symbol: DanceSymbol; size?: number 
   return <Icon size={size} strokeWidth={2} />
 }
 
-export default function DanceBattle() {
+export default function DanceBattle({ bestScore, onBestScore }: { bestScore: number; onBestScore: (score: number) => Promise<number> }) {
   const [game, setGame] = useState(newGame)
   const [now, setNow] = useState(Date.now())
   const [ready, setReady] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(false)
+  const [savedBest, setSavedBest] = useState(bestScore)
+  const attemptedSave = useRef(false)
+  const savingRef = useRef(false)
   const markReady = useCallback(() => setReady(true), [])
   const handleDanceFinished = useCallback((dancer: Dancer) => {
     setGame((current) => finishDance(current, dancer, Date.now()))
@@ -295,6 +303,30 @@ export default function DanceBattle() {
   const handleDefeatFinished = useCallback((dancer: Dancer) => {
     setGame((current) => finishMistake(current, dancer, Date.now()))
   }, [])
+
+  useEffect(() => setSavedBest(bestScore), [bestScore])
+
+  const saveRecord = useCallback(async (score: number) => {
+    if (savingRef.current) return
+    savingRef.current = true
+    setSaving(true)
+    setSaveError(false)
+    try {
+      setSavedBest(await onBestScore(score))
+    } catch (error) {
+      console.error('Impossible d’enregistrer le record de Dance Battle :', error)
+      setSaveError(true)
+    } finally {
+      savingRef.current = false
+      setSaving(false)
+    }
+  }, [onBestScore])
+
+  useEffect(() => {
+    if (game.phase !== 'over' || game.score <= savedBest || attemptedSave.current) return
+    attemptedSave.current = true
+    void saveRecord(game.score)
+  }, [game.phase, game.score, savedBest, saveRecord])
 
   useEffect(() => {
     if (game.phase === 'ready' || game.phase === 'over') return
@@ -324,6 +356,9 @@ export default function DanceBattle() {
   }, [playSymbol])
 
   function start() {
+    if (saving) return
+    attemptedSave.current = false
+    setSaveError(false)
     const time = Date.now()
     setNow(time)
     setGame(startGame(time))
@@ -352,7 +387,10 @@ export default function DanceBattle() {
       <div className="dance-status" role="status" aria-live="polite">{status}</div>
       {(game.phase === 'ready' || game.phase === 'over') ? <div className="dance-start">
         {game.phase === 'over' && <p>{game.score} points</p>}
-        <button className="primary-button dance-start-button" type="button" disabled={!ready} onClick={start}><Play size={16} /> {game.phase === 'over' ? 'Rejouer' : 'Commencer'}</button>
+        {game.phase === 'over' && <p>Record : {savedBest} points</p>}
+        {saving && <p role="status">Enregistrement du record…</p>}
+        {saveError && <p className="submit-error" role="alert">Impossible d’enregistrer le record. <button type="button" onClick={() => void saveRecord(game.score)}>Réessayer</button></p>}
+        <button className="primary-button dance-start-button" type="button" disabled={!ready || saving} onClick={start}><Play size={16} /> {game.phase === 'over' ? 'Rejouer' : 'Commencer'}</button>
       </div> : <div className="dance-sequence" aria-label={showSequence ? 'Suite à mémoriser' : `Progression : ${game.inputCount} sur ${game.sequence.length}`}>
         {game.sequence.map((symbol, index) => <span className={`dance-symbol ${index < game.inputCount ? 'is-entered' : ''}`} key={index} role="img" aria-label={showSequence || index < game.inputCount ? controls.find((control) => control.symbol === symbol)?.label : 'À trouver'}>{showSequence ? <SymbolIcon symbol={symbol} /> : index < game.inputCount ? <SymbolIcon symbol={symbol} /> : <span className="dance-symbol-dot" />}</span>)}
       </div>}

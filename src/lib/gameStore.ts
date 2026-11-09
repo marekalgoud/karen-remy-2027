@@ -21,6 +21,7 @@ export type Player = {
   team: Team
   score: number
   runnerBest?: number
+  danceBest?: number
 }
 
 type LocalState = {
@@ -29,7 +30,10 @@ type LocalState = {
   solved: string[]
   ranks: Record<string, number>
   attempts: Record<string, number>
+  puzzlePoints: Record<string, number>
 }
+
+export type PuzzleScoreDetail = { solved: boolean; points: number | null; attempts: number }
 
 const localKey = 'wedding-game-state-v1'
 
@@ -42,9 +46,10 @@ function readLocal(): LocalState {
       solved: stored.solved ?? [],
       ranks: stored.ranks ?? {},
       attempts: stored.attempts ?? {},
+      puzzlePoints: stored.puzzlePoints ?? {},
     }
   } catch {
-    return { players: [], solved: [], ranks: {}, attempts: {} }
+    return { players: [], solved: [], ranks: {}, attempts: {}, puzzlePoints: {} }
   }
 }
 
@@ -122,6 +127,25 @@ export async function getAttempts(uid: string): Promise<Record<string, number>> 
   return readLocal().attempts
 }
 
+export async function getPlayerPuzzleScores(uid: string): Promise<Record<string, PuzzleScoreDetail> | null> {
+  const firestore = db
+  if (firestore) {
+    const snapshot = await getDocs(collection(firestore, 'players', uid, 'solved'))
+    return Object.fromEntries(snapshot.docs.map((entry) => {
+      const data = entry.data()
+      const solved = data.solved === true || typeof data.rank === 'number'
+      return [entry.id, { solved, points: solved && typeof data.points === 'number' ? data.points : solved ? null : 0, attempts: typeof data.attempts === 'number' ? data.attempts : 0 }]
+    }))
+  }
+  const state = readLocal()
+  if (state.player?.uid !== uid) return null
+  const ids = new Set([...state.solved, ...Object.keys(state.attempts)])
+  return Object.fromEntries([...ids].map((id) => {
+    const solved = state.solved.includes(id)
+    return [id, { solved, points: solved ? state.puzzlePoints[id] ?? null : 0, attempts: state.attempts[id] ?? 0 }]
+  }))
+}
+
 export async function submitAnswer(player: Player, puzzle: Puzzle, answer: string) {
   const normalize = (value: string) => value.trim().toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   const isCorrect = normalize(answer) === normalize(puzzle.answer)
@@ -176,6 +200,7 @@ export async function submitAnswer(player: Player, puzzle: Puzzle, answer: strin
   const points = Math.max(0, 100 - (rank - 1) * 10)
   state.ranks[puzzle.id] = rank
   state.solved.push(puzzle.id)
+  state.puzzlePoints[puzzle.id] = points
   const updatedPlayer = { ...player, score: player.score + points }
   state.player = updatedPlayer
   state.players = [...state.players.filter((entry) => entry.uid !== player.uid), updatedPlayer]
@@ -183,20 +208,20 @@ export async function submitAnswer(player: Player, puzzle: Puzzle, answer: strin
   return { result: 'correct' as const, points, attempts: nextAttempts }
 }
 
-export async function recordRunnerBest(player: Player, runScore: number): Promise<Player> {
+async function recordGameBest(player: Player, runScore: number, field: 'runnerBest' | 'danceBest'): Promise<Player> {
   const firestore = db
   if (firestore) {
     return runTransaction(firestore, async (transaction) => {
       const playerRef = doc(firestore, 'players', player.uid)
       const playerSnapshot = await transaction.get(playerRef)
       const current = playerSnapshot.exists() ? (playerSnapshot.data() as Player) : player
-      const previousBest = current.runnerBest ?? 0
+      const previousBest = current[field] ?? 0
       if (runScore <= previousBest) return current
 
       const improvement = runScore - previousBest
       const updatedPlayer = {
         ...current,
-        runnerBest: runScore,
+        [field]: runScore,
         score: (current.score ?? 0) + improvement,
       }
       transaction.set(playerRef, updatedPlayer, { merge: true })
@@ -206,18 +231,26 @@ export async function recordRunnerBest(player: Player, runScore: number): Promis
 
   const state = readLocal()
   const current = state.players.find((entry) => entry.uid === player.uid) ?? state.player ?? player
-  const previousBest = current.runnerBest ?? 0
+  const previousBest = current[field] ?? 0
   if (runScore <= previousBest) return current
 
   const updatedPlayer = {
     ...current,
-    runnerBest: runScore,
+    [field]: runScore,
     score: current.score + runScore - previousBest,
   }
   state.player = updatedPlayer
   state.players = [...state.players.filter((entry) => entry.uid !== player.uid), updatedPlayer]
   writeLocal(state)
   return updatedPlayer
+}
+
+export function recordRunnerBest(player: Player, runScore: number): Promise<Player> {
+  return recordGameBest(player, runScore, 'runnerBest')
+}
+
+export function recordDanceBest(player: Player, danceScore: number): Promise<Player> {
+  return recordGameBest(player, danceScore, 'danceBest')
 }
 
 export function subscribePlayers(onUpdate: (players: Player[]) => void, onError?: (error: Error) => void): Unsubscribe {
@@ -250,6 +283,7 @@ export async function deletePlayer(playerId: string): Promise<void> {
     state.player = undefined
     state.solved = []
     state.attempts = {}
+    state.puzzlePoints = {}
   }
   writeLocal(state)
 }
@@ -329,6 +363,7 @@ export async function resetEntireGame(): Promise<number> {
   state.solved = []
   state.ranks = {}
   state.attempts = {}
+  state.puzzlePoints = {}
   writeLocal(state)
   return deletedPlayers
 }

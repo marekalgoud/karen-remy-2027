@@ -11,13 +11,32 @@ import { advanceGame, enterSymbol, finishDance, finishMistake, newGame, scoreMul
 
 type AnimatedGroup = Group & { animations: AnimationClip[] }
 
-const assets: Record<Dancer, { model: string; idle: string; clapping: string; defeated: string; victory: string; dances: string[] }> = {
+function fadeAudio(audio: HTMLAudioElement, targetVolume: number, duration: number): () => void {
+  const startingVolume = audio.volume
+  const startedAt = performance.now()
+  let frame = 0
+  let cancelled = false
+  const tick = () => {
+    if (cancelled) return
+    const progress = Math.min((performance.now() - startedAt) / duration, 1)
+    audio.volume = startingVolume + (targetVolume - startingVolume) * progress
+    if (progress < 1) frame = requestAnimationFrame(tick)
+  }
+  frame = requestAnimationFrame(tick)
+  return () => {
+    cancelled = true
+    cancelAnimationFrame(frame)
+  }
+}
+
+const assets: Record<Dancer, { model: string; idle: string; clapping: string; defeated: string; victory: string; dances: string[]; music: string[] }> = {
   marie: {
     model: '/models/groom/groom.glb', idle: '/models/groom/groom-idle.fbx',
     clapping: '/models/groom/groom-clapping.fbx',
     defeated: '/models/groom/groom-defeat.fbx',
     victory: '/models/groom/groom-victory.fbx',
     dances: ['chicken-dance', 'dancing-twerk', 'gangnam-style', 'locking-hip-hop-dance', 'macarena-dance', 'salsa-dance', 'twist-dance'].map((name) => `/models/groom/dance/groom-${name}.fbx`),
+    music: ['danse-des-canards', 'twerk', 'gnamgnam-style', 'hip-hop', 'macarena', 'salsa', 'twist'],
   },
   mariee: {
     model: '/models/bride/bride.glb', idle: '/models/bride/bride-idle.fbx',
@@ -25,6 +44,7 @@ const assets: Record<Dancer, { model: string; idle: string; clapping: string; de
     defeated: '/models/bride/bride-defeated.fbx',
     victory: '/models/bride/bride-victory.fbx',
     dances: ['belly-dance', 'hip-hop-dancing', 'house-dancing', 'robot-hip-hop-dance', 'break-dance', 'salsa-dancing', 'samba-dancing'].map((name) => `/models/bride/dance/bride-${name}.fbx`),
+    music: ['belly-dance', 'hip-hop', 'house', 'hip-hop', 'break-dance', 'salsa', 'samba'],
   },
 }
 
@@ -296,6 +316,8 @@ export default function DanceBattle({ bestScore, onBestScore }: { bestScore: num
   const [savedBest, setSavedBest] = useState(bestScore)
   const attemptedSave = useRef(false)
   const savingRef = useRef(false)
+  const ambientAudio = useRef<HTMLAudioElement | null>(null)
+  const ambientFade = useRef<(() => void) | null>(null)
   const markReady = useCallback(() => setReady(true), [])
   const handleDanceFinished = useCallback((dancer: Dancer) => {
     setGame((current) => finishDance(current, dancer, Date.now()))
@@ -305,6 +327,73 @@ export default function DanceBattle({ bestScore, onBestScore }: { bestScore: num
   }, [])
 
   useEffect(() => setSavedBest(bestScore), [bestScore])
+
+  useEffect(() => {
+    const audio = ambientAudio.current
+    if (!audio) return
+    ambientFade.current?.()
+    ambientFade.current = fadeAudio(audio, game.phase === 'dancing' ? 0 : 0.12, 450)
+  }, [game.phase])
+
+  useEffect(() => {
+    if (game.phase !== 'mistake') return
+    const audio = new Audio('/sounds/defeat.mp3')
+    audio.loop = false
+    void audio.play().catch(() => undefined)
+  }, [game.phase])
+
+  useEffect(() => {
+    if (game.phase !== 'over') return
+    const audio = new Audio('/sounds/victory.mp3')
+    audio.loop = false
+    void audio.play().catch(() => undefined)
+  }, [game.phase])
+
+  useEffect(() => () => {
+    ambientFade.current?.()
+    ambientAudio.current?.pause()
+    ambientAudio.current = null
+  }, [])
+
+  const activeDanceTrack = game.phase === 'dancing' && game.dancer
+    ? `/sounds/${assets[game.dancer].music[game.danceIndex % assets[game.dancer].music.length]}.mp3`
+    : null
+
+  useEffect(() => {
+    if (!activeDanceTrack) return
+
+    const audio = new Audio(activeDanceTrack)
+    const fadeDuration = 300
+    audio.loop = true
+    audio.volume = 0
+    void audio.play().catch(() => undefined)
+
+    const fadeInStarted = performance.now()
+    let frame = 0
+    const fadeIn = () => {
+      const progress = Math.min((performance.now() - fadeInStarted) / fadeDuration, 1)
+      audio.volume = progress
+      if (progress < 1) frame = requestAnimationFrame(fadeIn)
+    }
+    frame = requestAnimationFrame(fadeIn)
+
+    return () => {
+      cancelAnimationFrame(frame)
+      const startingVolume = audio.volume
+      const fadeOutStarted = performance.now()
+      const fadeOut = () => {
+        const progress = Math.min((performance.now() - fadeOutStarted) / fadeDuration, 1)
+        audio.volume = startingVolume * (1 - progress)
+        if (progress < 1) {
+          frame = requestAnimationFrame(fadeOut)
+        } else {
+          audio.pause()
+          audio.currentTime = 0
+        }
+      }
+      frame = requestAnimationFrame(fadeOut)
+    }
+  }, [activeDanceTrack])
 
   const saveRecord = useCallback(async (score: number) => {
     if (savingRef.current) return
@@ -359,6 +448,15 @@ export default function DanceBattle({ bestScore, onBestScore }: { bestScore: num
     if (saving) return
     attemptedSave.current = false
     setSaveError(false)
+    if (!ambientAudio.current) {
+      ambientAudio.current = new Audio('/sounds/ambiant.mp3')
+      ambientAudio.current.loop = true
+      ambientAudio.current.volume = 0
+    }
+    void ambientAudio.current.play().then(() => {
+      ambientFade.current?.()
+      ambientFade.current = fadeAudio(ambientAudio.current!, 0.12, 450)
+    }).catch(() => undefined)
     const time = Date.now()
     setNow(time)
     setGame(startGame(time))

@@ -399,7 +399,7 @@ function GrassMaterial() {
 
 function RunnerLighting({ score }: { score: number }) {
   const phaseScore = score % 60
-  const phase = RUNNER_LIGHT_PHASES[Math.floor(phaseScore / 15)]
+  const phase = RUNNER_LIGHT_PHASES[Math.floor(phaseScore / 10)]
   const ambientRef = useRef<AmbientLight>(null)
   const hemisphereRef = useRef<HemisphereLight>(null)
   const sunlightRef = useRef<DirectionalLight>(null)

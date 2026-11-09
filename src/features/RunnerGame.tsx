@@ -512,6 +512,8 @@ function RunnerWorld({ team, status, action, score, onAvoided, onCollision, onRe
 useGLTF.preload('/models/game/forest.glb')
 useGLTF.preload('/models/game/cloud-1.glb')
 useGLTF.preload('/models/game/grass.glb')
+useGLTF.preload('/models/game/cake.glb')
+useGLTF.preload('/models/game/paper-plane.glb')
 
 function ReadySignal({ status, onReady }: { status: GameStatus; onReady: () => void }) {
   useEffect(() => {

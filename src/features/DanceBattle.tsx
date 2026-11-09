@@ -17,14 +17,14 @@ const assets: Record<Dancer, { model: string; idle: string; clapping: string; de
     clapping: '/models/groom/groom-clapping.fbx',
     defeated: '/models/groom/groom-defeat.fbx',
     victory: '/models/groom/groom-victory.fbx',
-    dances: ['chicken-dance', 'dancing-twerk', 'gangnam-style', 'locking-hip-hop-dance', 'macarena-dance', 'silly-dance', 'twist-dance'].map((name) => `/models/groom/dance/groom-${name}.fbx`),
+    dances: ['chicken-dance', 'dancing-twerk', 'gangnam-style', 'locking-hip-hop-dance', 'macarena-dance', 'salsa-dance', 'twist-dance'].map((name) => `/models/groom/dance/groom-${name}.fbx`),
   },
   mariee: {
     model: '/models/bride/bride.glb', idle: '/models/bride/bride-idle.fbx',
     clapping: '/models/bride/bride-clapping.fbx',
     defeated: '/models/bride/bride-defeated.fbx',
     victory: '/models/bride/bride-victory.fbx',
-    dances: ['belly-dance', 'hip-hop-dancing', 'house-dancing', 'robot-hip-hop-dance', 'rumba-dancing', 'salsa-dancing', 'samba-dancing'].map((name) => `/models/bride/dance/bride-${name}.fbx`),
+    dances: ['belly-dance', 'hip-hop-dancing', 'house-dancing', 'robot-hip-hop-dance', 'break-dance', 'salsa-dancing', 'samba-dancing'].map((name) => `/models/bride/dance/bride-${name}.fbx`),
   },
 }
 
